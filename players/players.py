@@ -1,11 +1,10 @@
 import importlib
-
-import numpy.random as random
+from numpy import random
 
 
 class AbstractPlayer:
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, pid):
+        self.id = pid
         self.ngame = 0
         self.prev_action = 0
         self.action = 0
@@ -20,6 +19,9 @@ class AbstractPlayer:
         self.total_payoff += payoff
         self.ngame += 1
 
+    def evolve(self, player):
+        pass
+
     def __str__(self):
         return "Round " + str(self.ngame) + " " \
                "[" + str(self.id) + "] " + \
@@ -28,9 +30,6 @@ class AbstractPlayer:
 
 
 class TFTPlayer(AbstractPlayer):
-    def __init__(self, id):
-        AbstractPlayer.__init__(self, id)
-
     def play(self, avg_payoff):
         self.prev_action = self.action
         if self.ngame > 0:
@@ -40,9 +39,6 @@ class TFTPlayer(AbstractPlayer):
 
 
 class RandomPlayer(AbstractPlayer):
-    def __init__(self, id):
-        AbstractPlayer.__init__(self, id)
-
     def play(self, avg_payoff):
         self.prev_action = self.action
         self.action = 0 if random.uniform(0, 1) < 0.5 else 1
@@ -51,9 +47,6 @@ class RandomPlayer(AbstractPlayer):
 
 
 class ParlovPlayer(AbstractPlayer):
-    def __init__(self, id):
-        AbstractPlayer.__init__(self, id)
-
     def play(self, avg_payoff):
         self.prev_action = self.action
         if self.ngame > 0:
@@ -62,13 +55,28 @@ class ParlovPlayer(AbstractPlayer):
         return self.action
 
 
-class HumanPlayer(AbstractPlayer):
-    def __init__(self, id):
-        AbstractPlayer.__init__(self, id)
+class PureStrategyPlayer(AbstractPlayer):
+    def __init__(self, pid, M, action):
+        super().__init__(pid)
+        self.M = M
+        self.action = action
+        self.prev_action = action
 
     def play(self, avg_payoff):
+        return self.action
+
+    def evolve(self, player):
         self.prev_action = self.action
-        self.action = 0 if raw_input('Choose C or D: ') == 'C' else 1
+        if self.total_payoff < player.total_payoff:
+            prob = (player.total_payoff - self.total_payoff)/self.M
+            if random.uniform(0,1) < prob:
+                self.action = player.action
+
+
+class HumanPlayer(AbstractPlayer):
+    def play(self, avg_payoff):
+        self.prev_action = self.action
+        self.action = 0 if input('Choose C or D: ') == 'C' else 1
 
         return self.action
 
@@ -79,7 +87,7 @@ def players_factory(args):
         count = 0
         for name in args:
             for i in range(int(args[name])):
-                player = getattr(importlib.import_module("players.players_types"), name)(count)
+                player = getattr(importlib.import_module("players.players"), name)(count)
                 player.action = 0 if random.uniform(0, 1) < 0.5 else 1
                 agents[count] = player
                 count += 1
