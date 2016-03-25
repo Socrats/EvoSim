@@ -22,9 +22,13 @@ class AbstractPlayer:
     def evolve(self, player):
         pass
 
+    def init_action(self, action):
+        self.action = action
+        self.prev_action = action
+
     def __str__(self):
         return "Round " + str(self.ngame) + " " \
-               "[" + str(self.id) + "] " + \
+                                            "[" + str(self.id) + "] " + \
                ("D" if self.action else "C") + \
                " payoff= " + str(self.total_payoff)
 
@@ -56,11 +60,11 @@ class ParlovPlayer(AbstractPlayer):
 
 
 class PureStrategyPlayer(AbstractPlayer):
-    def __init__(self, pid, M, action):
+    def __init__(self, pid):
         super().__init__(pid)
-        self.M = M
-        self.action = action
-        self.prev_action = action
+        self.M = 0
+        self.action = 0
+        self.prev_action = 0
 
     def play(self, avg_payoff):
         return self.action
@@ -68,9 +72,16 @@ class PureStrategyPlayer(AbstractPlayer):
     def evolve(self, player):
         self.prev_action = self.action
         if self.total_payoff < player.total_payoff:
-            prob = (player.total_payoff - self.total_payoff)/self.M
-            if random.uniform(0,1) < prob:
+            prob = (player.total_payoff - self.total_payoff) / self.M
+            if random.uniform(0, 1) < prob:
                 self.action = player.action
+                # Return a 1 if changes to cooperate or else -1
+                if self.action != self.prev_action:
+                    return -1 if self.action else 1
+        return 0
+
+    def set_m(self, m):
+        self.M = m
 
 
 class HumanPlayer(AbstractPlayer):
@@ -83,21 +94,23 @@ class HumanPlayer(AbstractPlayer):
 
 def players_factory(args):
     def factory():
-        agents = {}
+        players = {}
         count = 0
         for name in args:
+            if name == 'ncoop':
+                continue
             for i in range(int(args[name])):
                 player = getattr(importlib.import_module("players.players"), name)(count)
-                player.action = 0 if random.uniform(0, 1) < 0.5 else 1
-                agents[count] = player
+                player.init_action(0 if random.uniform(0, 1) < args['ncoop'] else 1)
+                players[count] = player
                 count += 1
-        return agents
+        return players
 
     return factory
 
 
-def generate_players(nplayers, ratios):
-    args = {}
+def generate_players(ratios, nplayers=10, ncoop=0.5):
+    args = {'ncoop': ncoop}
     for ratio in ratios:
-        args[ratio[0]] = ratio[1]*nplayers
+        args[ratio[0]] = ratio[1] * nplayers
     return players_factory(args)()
