@@ -61,7 +61,6 @@ class PGGGame(AbstractGame):
         super().__init__(threshold, generations, population)
         self.r = r
         self.c = cost
-        self.M = 0
 
     def calculate_payoff(self, action):
         payoff = (self.nc*self.r*self.c)/self.N
@@ -75,11 +74,10 @@ class PGGGame(AbstractGame):
         max_p = self.calculate_payoff(1)  # Max payoff
         self.nc = 1
         min_p = self.calculate_payoff(0)  # Min payoff
-        self.M = max_p - min_p
         self.nc = 0
         # Get number of cooperators
         for player in self.population.values():
-            player.set_m(self.M)
+            player.set_m_payoffs(max_p=max_p, min_p=min_p)
             self.nc += 0 if player.action else 1
 
     def run(self):
@@ -95,3 +93,52 @@ class PGGGame(AbstractGame):
             if self.generations > self.threshold:
                 self.coopLevel[i-self.threshold] = self.nc / self.N
             logger.debug("[" + str(i) + "] ncoop = " + str(self.nc))
+
+
+class PGGiGame(PGGGame):
+    def __init__(self, population, threshold=0, generations=100, r=1.0, cost=1.0, nu=1.0):
+        super().__init__(population, threshold=threshold, generations=generations, r=r, cost=cost)
+        self.nu = nu
+        self.ni = 0
+        self.inspLevel = np.arange(0, generations, dtype=np.float64)
+
+    def get_inspected_player(self, pid):
+        iid = np.random.randint(0, self.N)
+        while iid == pid:
+            iid = np.random.randint(0, self.N)
+        if self.population[iid].action != 1:
+            iid = -1
+        return iid
+
+    def inspect(self, inspector):
+        pass
+
+    def run(self):
+        for i in range(self.generations + self.threshold):
+            # Calculate payoffs
+            for pid, player in self.population.items():
+                if player.action != 2:
+                    player.update_payoff(self.calculate_payoff(player.action))
+                else:
+                    self.ni += 1
+                    iid = self.get_inspected_player(pid)
+                    if iid == -1:
+                        payoff = 0
+                    else:
+                        # Payoff for a D
+                        payoff = float(self.calculate_payoff(1)) * float(self.nu)
+                        self.population[iid].set_inspected(-payoff)
+                    player.last_payoff = payoff
+                    player.total_payoff += payoff
+                    player.ngame += 1
+
+            # Evolve
+            for player in self.population.values():
+                # Call evolve and update number of cooperators
+                self.nc += player.evolve(self.population[np.random.randint(0, self.N)])
+
+            logger.debug("[" + str(i) + "] ncoop = " + str(self.nc) + " ninsp = " + str(self.ni))
+            if self.generations > self.threshold:
+                self.coopLevel[i-self.threshold] = self.nc / self.N
+                self.inspLevel[i-self.threshold] = self.ni / self.N
+                self.ni = 0
