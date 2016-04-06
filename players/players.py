@@ -29,7 +29,7 @@ class AbstractPlayer:
     def __str__(self):
         return "Round " + str(self.ngame) + " " \
                                             "[" + str(self.id) + "] " + \
-               ("D" if self.action else "C") + \
+               {0: "C", 1: "D", 2: "I"}.get(self.action) + \
                " payoff= " + str(self.total_payoff)
 
 
