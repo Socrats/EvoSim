@@ -26,6 +26,11 @@ class AbstractPlayer:
         self.action = action
         self.prev_action = action
 
+    def init_params(self):
+        self.ngame = 0
+        self.total_payoff = 0
+        self.last_payoff = 0
+
     def __str__(self):
         return "Round " + str(self.ngame) + " " \
                                             "[" + str(self.id) + "] " + \
@@ -69,6 +74,11 @@ class PureStrategyPlayer(AbstractPlayer):
         self.payoff_inspected = 0
         self.inspected = False
 
+    def init_params(self):
+        super().init_params()
+        self.payoff_inspected = 0
+        self.inspected = False
+
     def play(self, avg_payoff):
         return self.action
 
@@ -77,17 +87,11 @@ class PureStrategyPlayer(AbstractPlayer):
             self.last_payoff -= self.payoff_inspected
         self.inspected = False
         self.prev_action = self.action
+
         if self.total_payoff < player.total_payoff:
             prob = (player.total_payoff - self.total_payoff) / (player.maxP - self.minP)
             if random.uniform(0, 1) < prob:
                 self.action = player.action
-                # Return a 1 if changes to cooperate or else -1
-                if self.action != self.prev_action:
-                    if self.prev_action == 0 and self.action > 0:
-                        return -1
-                    elif self.prev_action > 0 and self.action == 0:
-                        return 1
-        return 0
 
     def set_m_payoffs(self, max_p=0, min_p=0):
         self.maxP = max_p

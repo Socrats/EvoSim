@@ -29,6 +29,7 @@ class AbstractGame:
             elif prob < (ncoop + ninsp):
                 action = 2
             player.init_action(action)
+            player.init_params()
 
     def run(self):
         avg_payoff = 0
@@ -99,7 +100,8 @@ class PGGGame(AbstractGame):
             # Evolve
             for player in self.population.values():
                 # Call evolve and update number of cooperators
-                self.nc += player.evolve(self.population[np.random.randint(0, self.N)])
+                dc, = player.evolve(self.population[np.random.randint(0, self.N)])
+                self.nc += dc
 
             if self.generations > self.threshold:
                 self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
@@ -113,6 +115,13 @@ class PGGiGame(PGGGame):
         self.ni = 0
         self.inspLevel = np.arange(0, generations, dtype=np.float64)
 
+    def calculate_payoff(self, action):
+        payoff = (self.nc*self.r*self.c)/(self.N - self.ni)
+        if action:
+            return payoff
+        else:
+            return payoff - self.c
+
     def get_inspected_player(self, pid):
         iid = np.random.randint(0, self.N)
         while iid == pid:
@@ -124,6 +133,19 @@ class PGGiGame(PGGGame):
     def inspect(self, inspector):
         pass
 
+    def init_game(self):
+        self.nc = self.N - 1
+        self.ni = 0
+        max_p = self.calculate_payoff(1)  # Max payoff
+        self.nc = 1
+        min_p = self.calculate_payoff(0)  # Min payoff
+        self.nc = 0
+        # Get number of cooperators
+        for player in self.population.values():
+            player.set_m_payoffs(max_p=max_p, min_p=min_p)
+            self.nc += 0 if player.action else 1
+            self.ni += 1 if (player.action == 2) else 0
+
     def run(self):
         for self.current_generation in range(self.generations + self.threshold):
             # Calculate payoffs
@@ -131,7 +153,6 @@ class PGGiGame(PGGGame):
                 if player.action != 2:
                     player.update_payoff(self.calculate_payoff(player.action))
                 else:
-                    self.ni += 1
                     iid = self.get_inspected_player(pid)
                     if iid == -1:
                         payoff = 0
@@ -144,12 +165,18 @@ class PGGiGame(PGGGame):
                     player.ngame += 1
 
             # Evolve
+            self.nc = 0
+            self.ni = 0
             for player in self.population.values():
                 # Call evolve and update number of cooperators
-                self.nc += player.evolve(self.population[np.random.randint(0, self.N)])
+                player.evolve(self.population[np.random.randint(0, self.N)])
+
+                if player.action == 0:
+                    self.nc += 1
+                elif player.action == 2:
+                    self.ni += 1
 
             logger.debug("[" + str(self.current_generation) + "] ncoop = " + str(self.nc) + " ninsp = " + str(self.ni))
             if self.generations > self.threshold:
                 self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
                 self.inspLevel[self.current_generation-self.threshold] = self.ni / self.N
-                self.ni = 0

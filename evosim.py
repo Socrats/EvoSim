@@ -12,18 +12,21 @@ N = 5
 HUMAN_PLAYER = True
 PMATRIX = np.array([[0.8, 0.0],
                     [1.0, 0.2]])
-GENERATIONS = 1000
-THRESHOLD = 100
+GENERATIONS = 2000
+THRESHOLD = 0
 cost = 1.0
 r = 10.0
 r_min = 1.0
 r_max = 5.25
 r_step = 0.25
 nu = 1.0
-runs = 1
+runs = 100
 realizations = 1
-ncoop = 0.5
-ninsp = 0.5
+ncoop = 0.1
+ninsp = 0.8
+show_micro_simulations = False
+store_plots = False
+store_data = False
 
 # players = generate_players(N, [['TFTPlayer', 0.8], ['RandomPlayer', 0.0], ['ParlovPlayer', 0.2]])
 # game = NIPDGame(THRESHOLD, GENERATIONS, players)
@@ -32,7 +35,6 @@ ninsp = 0.5
 
 players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N, ncoop=ncoop, ninsp=ninsp)
 game = PGGiGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
-
 
 if __name__ == "__main__":
     level = logging.INFO
@@ -46,10 +48,18 @@ if __name__ == "__main__":
     insp_avg_real = np.empty([1, realizations])
     coop_avg = np.arange(r_min, r_max, r_step)
     insp_avg = np.arange(r_min, r_max, r_step)
+
+    if show_micro_simulations:
+        plt.ion()  # Note this correction
+        fig = plt.figure(1)
+        ax = plt.axes(xlim=(-1, THRESHOLD + GENERATIONS), ylim=(-0.1, 1.2))
+        r_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
+
     for idx, r_param in enumerate(r_params):
         # Update r value
         logger.info("Starting simulation with r = %f", r_param)
         game.r = r_param
+        r_start_time = time()
         for s in range(realizations):
             # Init graph
             for r in range(runs):
@@ -66,16 +76,19 @@ if __name__ == "__main__":
                 if game.__class__.__name__ == 'PGGiGame':
                     insp_avg_run[0][r] = np.mean(game.inspLevel)
 
-                # Save and Plot results
-                # plt.figure(1)
-                # plt.plot(x, game.coopLevel, label='Cooperation ratio', color='g')
-                # if game.__class__.__name__ == 'PGGiGame':
-                #     plt.plot(x, game.inspLevel, label='Inspectors ratio', color='b')
-                # plt.xlim(-1, THRESHOLD + GENERATIONS)
-                # plt.ylim(-0.1, 1.2)
-                # # plt.autoscale(True)
-                # plt.legend()
-                # plt.show()
+                if show_micro_simulations:
+                    plt.cla()
+                    # Save and Plot results
+                    r_text.set_text('r = %.3f' % r_param)
+                    ax.plot(x, game.coopLevel, label='Fraction of cooperators', color='g', lw=2)
+                    if game.__class__.__name__ == 'PGGiGame':
+                        ax.plot(x, game.inspLevel, label='Fraction of inspectors', color='b', lw=2)
+                    ax.set_xlabel("generations")
+                    ax.set_ylabel("Fraction of players")
+                    # plt.autoscale(True)
+                    ax.legend()
+                    plt.show()
+                    plt.pause(0.0001)  # Note this correction
 
                 # Init population
                 game.init_population(ncoop=ncoop, ninsp=ninsp)
@@ -83,18 +96,24 @@ if __name__ == "__main__":
             # Update the Avg.
             coop_avg_real[0][s] = np.mean(coop_avg_run)
             if game.__class__.__name__ == 'PGGiGame':
-                    insp_avg_real[0][s] = np.mean(insp_avg_run)
+                insp_avg_real[0][s] = np.mean(insp_avg_run)
 
         coop_avg[idx] = np.mean(coop_avg_real)
         insp_avg[idx] = np.mean(insp_avg_real)
+        r_interval = time() - r_start_time
+        logger.info("Simulation finished: elapsed time: %s seconds", r_interval)
 
+    if show_micro_simulations:
+        plt.ioff()
     # Save and Plot results
     plt.figure(2)
-    plt.plot(r_params, coop_avg, label='Cooperation ratio', color='g')
+    plt.plot(r_params, coop_avg, label='Fraction of cooperators', color='g')
     if game.__class__.__name__ == 'PGGiGame':
-        plt.plot(r_params, insp_avg, label='Inspectors ratio', color='b')
-    plt.xlim(0, r_max + 1)
+        plt.plot(r_params, insp_avg, label='Fraction of inspectors', color='b')
+    plt.xlim(r_min - 1, r_max + 1)
     plt.ylim(-0.1, 1.2)
+    plt.xlabel("r")
+    plt.ylabel("Fraction of players")
     # plt.autoscale(True)
     plt.legend()
     plt.show()
