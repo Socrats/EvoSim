@@ -106,35 +106,101 @@ class PureStrategyPlayer(AbstractPlayer):
 class PGGiPlayer(AbstractPlayer):
     def __init__(self, pid):
         super().__init__(pid)
+        self.neighbors = []
         self.action = 0
         self.prev_action = 0
         self.maxP = 0
         self.minP = 0
-        self.neighbors = {}
+        self.inspected = 0
 
-    def play(self, avg_payoff):
-        return self.action
+    def play_group_game(self, calculate_payoff, nu):
+        game_players = [self, *self.neighbors]
+        inspectors = []
+        nc = 0
+        ni = 0
 
-    def inspect(self):
-        pass
+        # Update nc and ni
+        for player in [self, *self.neighbors]:
+            player.inspected = 0
+            if player.action == 0:
+                nc += 1
+            elif player.action == 2:
+                ni += 1
+                inspectors.append({'inspector': player, 'inspected': 0})
+                game_players.remove(player)
+
+        # If no cooperators, all players get 0 payoff (Tragedy of the commons)
+        if nc == 0:
+            for player in [self, *self.neighbors]:
+                player.last_payoff = 0
+                player.total_payoff += 0
+                player.ngame += 1
+            return
+
+        # Calculate payoffs
+        for player in game_players:
+            player.update_payoff(calculate_payoff(player.action, nc, ni, len(self.neighbors)))
+
+        if ni == 0:
+            return
+
+        # Inspection round
+
+        inspectors_d = []
+        # Find player
+        for inspector in inspectors:
+            inspected_player = game_players[random.randint(0, len(game_players))]
+            if inspected_player.action:
+                # Found a D
+                inspector['inspected'] = inspected_player
+                inspectors_d.append(inspector)
+                inspected_player.inspected += 1
+            else:
+                inspector['inspector'].last_payoff = 0
+                inspector['inspector'].total_payoff += 0
+                inspector['inspector'].ngame += 1
+
+        # Inspectors that found defectors
+        for inspector in inspectors_d:
+            payoff = (inspector['inspected'].last_payoff * float(nu)) / inspector['inspected'].inspected
+            inspector['inspected'].set_inspected(-payoff)
+
+            inspector['inspector'].last_payoff = payoff
+            inspector['inspector'].total_payoff += payoff
+            inspector['inspector'].ngame += 1
+
+    def get_inspected_player(self, num_game_players):
+        iid = random.randint(0, num_game_players)
+        if self.neighbors[iid].action != 1:
+            iid = -1
+        return iid
+
+    def set_inspected(self, payoff):
+        self.last_payoff += payoff
+        self.total_payoff += self.last_payoff
 
     def evolve(self, player):
+        self.inspected = 0
         self.prev_action = self.action
+
         if self.total_payoff < player.total_payoff:
             prob = (player.total_payoff - self.total_payoff) / (player.maxP - self.minP)
             if random.uniform(0, 1) < prob:
                 self.action = player.action
-                # Return a 1 if changes to cooperate or else -1
-                if self.action != self.prev_action:
-                    if self.prev_action == 0 and self.action > 0:
-                        return -1
-                    elif self.prev_action > 0 and self.action == 0:
-                        return 1
-        return 0
 
-    def set_m_payoffs(self, max_p=0, min_p=0):
-        self.maxP = max_p
-        self.minP = min_p
+    def set_p_limit(self, local_max_p, local_min_p):
+        self.maxP = 0
+        self.minP = 0
+        for player in [self, *self.neighbors]:
+            self.maxP += local_max_p(len(player.neighbors))
+            self.minP += local_min_p(len(player.neighbors))
+
+    def init_params(self):
+        super().init_params()
+        self.inspected = 0
+
+    def __str__(self):
+        pass
 
 
 class HumanPlayer(AbstractPlayer):

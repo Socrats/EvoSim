@@ -4,37 +4,45 @@ import logging
 from time import time
 
 from players.players import generate_players
-from games.games import NIPDGame, PGGGame, PGGiGame
+from games.games import NIPDGame, PGGGame, PGGiGame, PGGiNetwork
+from network.network import regular_network
 
 logger = logging.getLogger(__name__)
 
-N = 5
+N = 1000
 HUMAN_PLAYER = True
 PMATRIX = np.array([[0.8, 0.0],
                     [1.0, 0.2]])
 GENERATIONS = 2000
-THRESHOLD = 0
+THRESHOLD = 1000
 cost = 1.0
-r = 10.0
+r = 1.0
 r_min = 1.0
 r_max = 5.25
 r_step = 0.25
 nu = 1.0
-runs = 100
+runs = 2
 realizations = 1
-ncoop = 0.1
-ninsp = 0.8
+ncoop = 0.5
+ninsp = 0.0
+z = 4
 show_micro_simulations = False
 store_plots = False
+store_plots_dir = ""
 store_data = False
+store_data_dir = ""
 
 # players = generate_players(N, [['TFTPlayer', 0.8], ['RandomPlayer', 0.0], ['ParlovPlayer', 0.2]])
 # game = NIPDGame(THRESHOLD, GENERATIONS, players)
 # players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N, ncoop=0.5)
 # game = PGGGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost)
 
-players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N, ncoop=ncoop, ninsp=ninsp)
-game = PGGiGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
+# players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N, ncoop=ncoop, ninsp=ninsp)
+# game = PGGiGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
+
+players = generate_players([['PGGiPlayer', 1.0]], nplayers=N, ncoop=ncoop, ninsp=ninsp)
+regular_network(players, z)
+game = PGGiNetwork(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
 
 if __name__ == "__main__":
     level = logging.INFO
@@ -67,13 +75,15 @@ if __name__ == "__main__":
                 start_time = time()
                 # Init game
                 game.init_game()
+                # Init population
+                game.init_population(ncoop=ncoop, ninsp=ninsp)
                 game.run()
                 interval = time() - start_time
                 logger.debug("elapsed time: %s seconds", interval)
 
                 # Update Avg.
                 coop_avg_run[0][r] = np.mean(game.coopLevel)
-                if game.__class__.__name__ == 'PGGiGame':
+                if game.__class__.__name__ == 'PGGiGame' or 'PGGiNetwork':
                     insp_avg_run[0][r] = np.mean(game.inspLevel)
 
                 if show_micro_simulations:
@@ -81,21 +91,22 @@ if __name__ == "__main__":
                     # Save and Plot results
                     r_text.set_text('r = %.3f' % r_param)
                     ax.plot(x, game.coopLevel, label='Fraction of cooperators', color='g', lw=2)
-                    if game.__class__.__name__ == 'PGGiGame':
+                    if game.__class__.__name__ == 'PGGiGame' or 'PGGiNetwork':
                         ax.plot(x, game.inspLevel, label='Fraction of inspectors', color='b', lw=2)
                     ax.set_xlabel("generations")
                     ax.set_ylabel("Fraction of players")
+                    ax.set_ylim(-0.1, 1.2)
                     # plt.autoscale(True)
                     ax.legend()
                     plt.show()
                     plt.pause(0.0001)  # Note this correction
 
                 # Init population
-                game.init_population(ncoop=ncoop, ninsp=ninsp)
+                # game.init_population(ncoop=ncoop, ninsp=ninsp)
 
             # Update the Avg.
             coop_avg_real[0][s] = np.mean(coop_avg_run)
-            if game.__class__.__name__ == 'PGGiGame':
+            if game.__class__.__name__ == 'PGGiGame' or 'PGGiNetwork':
                 insp_avg_real[0][s] = np.mean(insp_avg_run)
 
         coop_avg[idx] = np.mean(coop_avg_real)
@@ -107,10 +118,10 @@ if __name__ == "__main__":
         plt.ioff()
     # Save and Plot results
     plt.figure(2)
-    plt.plot(r_params, coop_avg, label='Fraction of cooperators', color='g')
-    if game.__class__.__name__ == 'PGGiGame':
+    plt.plot([r_param/(z+1) for r_param in r_params], coop_avg, label='Fraction of cooperators', color='g')
+    if game.__class__.__name__ == 'PGGiGame' or 'PGGiNetwork':
         plt.plot(r_params, insp_avg, label='Fraction of inspectors', color='b')
-    plt.xlim(r_min - 1, r_max + 1)
+    plt.xlim(r_min/(z+1), r_max/(z+1))
     plt.ylim(-0.1, 1.2)
     plt.xlabel("r")
     plt.ylabel("Fraction of players")

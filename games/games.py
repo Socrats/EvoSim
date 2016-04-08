@@ -180,3 +180,62 @@ class PGGiGame(PGGGame):
             if self.generations > self.threshold:
                 self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
                 self.inspLevel[self.current_generation-self.threshold] = self.ni / self.N
+
+
+class PGGiNetwork(PGGGame):
+    def __init__(self, population, threshold=0, generations=100, r=1.0, cost=1.0, nu=1.0):
+        super().__init__(population, threshold=threshold, generations=generations, r=r, cost=cost)
+        self.nu = nu
+        self.ni = 0
+        self.inspLevel = np.arange(0, generations, dtype=np.float64)
+
+    def calculate_payoff_game(self, action, nc, ni, k):
+        payoff = (nc*self.r*self.c)/(k + 1 - ni)
+        if action:
+            return payoff
+        else:
+            return payoff - self.c
+
+    def local_max_p(self, k):
+        return (self.r*self.c*k)/(k+1)
+
+    def local_min_p(self, k):
+        return ((self.r/(k+1)) - 1)*self.c
+
+    def init_game(self):
+        pass
+
+    def init_population(self, ncoop=0.5, ninsp=0.0):
+        for player in self.population.values():
+            prob = np.random.uniform(0, 1)
+            action = 1
+            if prob < ncoop:
+                action = 0
+            elif prob < (ncoop + ninsp):
+                action = 2
+            player.init_action(action)
+            player.init_params()
+            player.set_p_limit(self.local_max_p, self.local_min_p)
+
+    def run(self):
+        for self.current_generation in range(self.generations + self.threshold):
+            # Calculate payoffs
+            for player in self.population.values():
+                player.play_group_game(self.calculate_payoff_game, self.nu)
+
+            # Evolve
+            self.nc = 0
+            self.ni = 0
+            for player in self.population.values():
+                # Call evolve and update number of cooperators
+                player.evolve(self.population[np.random.randint(0, self.N)])
+
+                if player.action == 0:
+                    self.nc += 1
+                elif player.action == 2:
+                    self.ni += 1
+
+            logger.debug("[" + str(self.current_generation) + "] ncoop = " + str(self.nc) + " ninsp = " + str(self.ni))
+            if self.generations > self.threshold:
+                self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
+                self.inspLevel[self.current_generation-self.threshold] = self.ni / self.N
