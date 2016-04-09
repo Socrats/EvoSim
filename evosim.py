@@ -9,19 +9,19 @@ from network.network import regular_network
 
 logger = logging.getLogger(__name__)
 
-N = 1000
+N = 500
 HUMAN_PLAYER = True
 PMATRIX = np.array([[0.8, 0.0],
                     [1.0, 0.2]])
 GENERATIONS = 2000
-THRESHOLD = 1000
+THRESHOLD = 100
 cost = 1.0
 r = 1.0
 r_min = 1.0
 r_max = 5.25
-r_step = 0.25
+r_step = 0.125
 nu = 1.0
-runs = 2
+runs = 1
 realizations = 1
 ncoop = 0.5
 ninsp = 0.0
@@ -61,7 +61,6 @@ if __name__ == "__main__":
         plt.ion()  # Note this correction
         fig = plt.figure(1)
         ax = plt.axes(xlim=(-1, THRESHOLD + GENERATIONS), ylim=(-0.1, 1.2))
-        r_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
 
     for idx, r_param in enumerate(r_params):
         # Update r value
@@ -89,6 +88,7 @@ if __name__ == "__main__":
                 if show_micro_simulations:
                     plt.cla()
                     # Save and Plot results
+                    r_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
                     r_text.set_text('r = %.3f' % r_param)
                     ax.plot(x, game.coopLevel, label='Fraction of cooperators', color='g', lw=2)
                     if game.__class__.__name__ == 'PGGiGame' or 'PGGiNetwork':
@@ -118,9 +118,10 @@ if __name__ == "__main__":
         plt.ioff()
     # Save and Plot results
     plt.figure(2)
-    plt.plot([r_param/(z+1) for r_param in r_params], coop_avg, label='Fraction of cooperators', color='g')
+    x_r = [r_param/(z+1) for r_param in r_params]
+    plt.plot(x_r, coop_avg, label='Fraction of cooperators', color='g')
     if game.__class__.__name__ == 'PGGiGame' or 'PGGiNetwork':
-        plt.plot(r_params, insp_avg, label='Fraction of inspectors', color='b')
+        plt.plot(x_r, insp_avg, label='Fraction of inspectors', color='b')
     plt.xlim(r_min/(z+1), r_max/(z+1))
     plt.ylim(-0.1, 1.2)
     plt.xlabel("r")

@@ -43,7 +43,7 @@ class AbstractGame:
                 avg_payoff += player.last_payoff
 
             avg_payoff /= len(self.population)
-            if self.generations > self.threshold:
+            if self.current_generation > self.threshold:
                 self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
             logger.debug("[" + str(self.current_generation) + "] ncoop = " + str(self.nc))
 
@@ -103,7 +103,7 @@ class PGGGame(AbstractGame):
                 dc, = player.evolve(self.population[np.random.randint(0, self.N)])
                 self.nc += dc
 
-            if self.generations > self.threshold:
+            if self.current_generation > self.threshold:
                 self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
             logger.debug("[" + str(self.current_generation) + "] ncoop = " + str(self.nc))
 
@@ -177,7 +177,7 @@ class PGGiGame(PGGGame):
                     self.ni += 1
 
             logger.debug("[" + str(self.current_generation) + "] ncoop = " + str(self.nc) + " ninsp = " + str(self.ni))
-            if self.generations > self.threshold:
+            if self.current_generation > self.threshold:
                 self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
                 self.inspLevel[self.current_generation-self.threshold] = self.ni / self.N
 
@@ -228,14 +228,18 @@ class PGGiNetwork(PGGGame):
             self.ni = 0
             for player in self.population.values():
                 # Call evolve and update number of cooperators
-                player.evolve(self.population[np.random.randint(0, self.N)])
+                player.selection()
 
                 if player.action == 0:
                     self.nc += 1
                 elif player.action == 2:
                     self.ni += 1
 
+            # Init players
+            for player in self.population.values():
+                player.init_params()
+
             logger.debug("[" + str(self.current_generation) + "] ncoop = " + str(self.nc) + " ninsp = " + str(self.ni))
-            if self.generations > self.threshold:
+            if self.current_generation > self.threshold:
                 self.coopLevel[self.current_generation-self.threshold] = self.nc / self.N
                 self.inspLevel[self.current_generation-self.threshold] = self.ni / self.N

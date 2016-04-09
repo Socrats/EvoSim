@@ -179,9 +179,10 @@ class PGGiPlayer(AbstractPlayer):
         self.last_payoff += payoff
         self.total_payoff += self.last_payoff
 
-    def evolve(self, player):
+    def selection(self):
         self.inspected = 0
         self.prev_action = self.action
+        player = self.neighbors[random.randint(0, len(self.neighbors))]
 
         if self.total_payoff < player.total_payoff:
             prob = (player.total_payoff - self.total_payoff) / (player.maxP - self.minP)
@@ -200,7 +201,9 @@ class PGGiPlayer(AbstractPlayer):
         self.inspected = 0
 
     def __str__(self):
-        pass
+        return "[" + str(self.id) + "] " + \
+               {0: "C", 1: "D", 2: "I"}.get(self.action) + \
+               " payoff= " + str(self.total_payoff)
 
 
 class HumanPlayer(AbstractPlayer):
