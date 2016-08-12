@@ -4,46 +4,37 @@ import logging
 from time import time
 
 from players.players import generate_players
-from games.games import NIPDGame, PGGGame, PGGiGame, PGGiNetwork
-from network.network import regular_network, scale_free_network
+from games.games import PGGSocialControl
+from network.network import regular_network
 
 logger = logging.getLogger(__name__)
 
-N = 200
-HUMAN_PLAYER = False
-PMATRIX = np.array([[0.8, 0.0],
-                    [1.0, 0.2]])
+N = 5
 GENERATIONS = 2000
 THRESHOLD = 0
 cost = 1.0
-# r = 3
-r_min = 1.25
-r_max = 5.0
-r_step = 0.25
-nu = 1.0
+r = 1.0
+r_min = 1.0
+r_max = 5.125
+r_step = 0.125
 runs = 1
 realizations = 1
-ncoop = 0.5
-ninsp = 0.0
-z = 4
+freq = {'dni': 0.2, 'cni': 0.0, 'di': 0.0, 'ci': 0.8}
+alpha = 0.5
+gamma = 1.0
+delta = 0.0
+mutation = 0.0
+z = N-1
 show_micro_simulations = True
 store_plots = False
 store_plots_dir = ""
 store_data = False
 store_data_dir = ""
 
-# players = generate_players(N, [['TFTPlayer', 0.8], ['RandomPlayer', 0.0], ['ParlovPlayer', 0.2]])
-# game = NIPDGame(THRESHOLD, GENERATIONS, players)
-# players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N, ncoop=0.5)
-# game = PGGGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost)
-
-# players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N, ncoop=ncoop, ninsp=ninsp)
-# game = PGGiGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
-
-players = generate_players([['PGGiPlayer', 1.0]], nplayers=N)
-# regular_network(players, z)
-scale_free_network(players, m0=5)
-game = PGGiNetwork(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost, nu=nu)
+players = generate_players([['PGGscPlayer', 1.0]], nplayers=N)
+regular_network(players, z)
+game = PGGSocialControl(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, alpha=alpha, gamma=gamma,
+                        delta=delta, mutation=mutation)
 
 if __name__ == "__main__":
     level = logging.INFO
@@ -76,7 +67,7 @@ if __name__ == "__main__":
                 # Init game
                 game.init_game()
                 # Init population
-                game.init_population(ncoop=ncoop, ninsp=ninsp)
+                game.init_population(dni=freq['dni'], cni=freq['cni'], di=freq['di'], ci=freq['ci'])
                 game.run()
                 interval = time() - start_time
                 logger.debug("elapsed time: %s seconds", interval)

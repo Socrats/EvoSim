@@ -20,6 +20,14 @@ class ThreeActions(AbstractActions):
     inspect = 2
 
 
+@unique
+class FourActions(AbstractActions):
+    CnI = 0
+    DnI = 1
+    CI = 2
+    DI = 3
+
+
 def action_factory(args):
     def factory():
         pass

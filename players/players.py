@@ -145,8 +145,8 @@ class PGGiPlayer(AbstractPlayer):
             return
 
         # Inspection round
-
         inspectors_d = []
+
         # Find player
         for inspector in inspectors:
             inspected_player = game_players[random.randint(0, len(game_players))]
@@ -182,12 +182,13 @@ class PGGiPlayer(AbstractPlayer):
     def selection(self):
         self.inspected = 0
         self.prev_action = self.action
+        self.ngame = 0
         player = self.neighbors[random.randint(0, len(self.neighbors))]
 
         if self.total_payoff < player.total_payoff:
             prob = (player.total_payoff - self.total_payoff) / (player.maxP - self.minP)
             if random.uniform(0, 1) < prob:
-                self.action = player.action
+                self.action = player.prev_action
 
     def set_p_limit(self, local_max_p, local_min_p):
         self.maxP = 0
@@ -206,6 +207,68 @@ class PGGiPlayer(AbstractPlayer):
                " payoff= " + str(self.total_payoff)
 
 
+class PGGscPlayer:
+    def __init__(self, pid):
+        self.id = pid
+        self.total_payoff = 0
+        self.last_payoff = 0
+        self.action = 0     # 0 -> D, 1 -> C
+        self.inspector = 0  # 0 -> not I, 1 -> I
+        self.prev_inspector = 0
+        self.prev_action = 0
+        self.inspected = False
+
+    def update_payoff(self, payoff):
+        self.last_payoff = payoff
+        self.total_payoff += payoff
+
+    def inspect(self, player, gamma, delta):
+        if not player.inspected:
+            player.total_payoff -= gamma*player.last_payoff
+            player.inspected = True
+
+        self.total_payoff += delta*player.last_payoff
+
+    def set_inspected(self):
+        self.inspected = 1
+
+    def selection(self, norm_factor, neighbor):
+        self.prev_action = self.action
+        self.prev_inspector = self.inspector
+        self.inspected = False
+        if self.total_payoff < neighbor.total_payoff:
+            prob = (neighbor.total_payoff - self.total_payoff) * norm_factor
+            if random.uniform(0, 1) < prob:
+                self.action = neighbor.action
+                self.inspector = neighbor.inspector
+
+    def mutation(self, prob):
+        if random.uniform(0, 1) < prob:
+            self.prev_action = self.action
+            pc = random.uniform(0, 1)
+            if pc < 0.33:
+                self.action = (self.action + 1) % 2
+            if pc < 0.66:
+                self.inspector = (self.action + 1) % 2
+            else:
+                self.action = (self.action + 1) % 2
+                self.inspector = (self.action + 1) % 2
+
+    def init_params(self):
+        self.total_payoff = 0
+        self.last_payoff = 0
+        self.action = 0     # 0 -> D, 1 -> C
+        self.inspector = 0  # 0 -> not I, 1 -> I
+        self.prev_inspector = 0
+        self.prev_action = 0
+        self.inspected = 0
+
+    def __str__(self):
+        return "[" + str(self.id) + "] " + \
+               {'00': "DnI", '01': "CnI", '10': "DI", '11': 'CI'}.get(str(self.inspector)+str(self.action)) + \
+               " payoff= " + str(self.total_payoff)
+
+
 class HumanPlayer(AbstractPlayer):
     def play(self, avg_payoff):
         self.prev_action = self.action
@@ -220,20 +283,8 @@ def players_factory(args):
         players = {}
         count = 0
         for name in args:
-            if name == 'ncoop' or name == 'ninsp':
-                continue
             for i in range(int(args[name])):
                 player = getattr(importlib.import_module("players.players"), name)(count)
-                prob = random.uniform(0, 1)
-                if 'ninsp' in args.keys():
-                    action = 1
-                    if prob < args['ncoop']:
-                        action = 0
-                    elif prob < (args['ncoop'] + args['ninsp']):
-                        action = 2
-                    player.init_action(action)
-                else:
-                    player.init_action(0 if prob < args['ncoop'] else 1)
                 players[count] = player
                 count += 1
         return players
@@ -241,8 +292,8 @@ def players_factory(args):
     return factory
 
 
-def generate_players(ratios, nplayers=10, ncoop=0.5, ninsp=0.0):
-    args = {'ncoop': ncoop, 'ninsp': ninsp}
+def generate_players(ratios, nplayers=10):
+    args = {}
     for ratio in ratios:
         args[ratio[0]] = ratio[1] * nplayers
     return players_factory(args)()
