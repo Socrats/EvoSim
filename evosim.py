@@ -9,16 +9,16 @@ from network.network import regular_network, scale_free_network
 
 logger = logging.getLogger(__name__)
 
-N = 200
+N = 500
 HUMAN_PLAYER = False
 PMATRIX = np.array([[0.8, 0.0],
                     [1.0, 0.2]])
-GENERATIONS = 2000
-THRESHOLD = 0
+GENERATIONS = 100
+THRESHOLD = 100000
 cost = 1.0
 # r = 3
-r_min = 1.25
-r_max = 5.0
+r_min = 0.00
+r_max = 5.25
 r_step = 0.25
 nu = 1.0
 runs = 1
@@ -41,9 +41,11 @@ store_data_dir = ""
 # game = PGGiGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
 
 players = generate_players([['PGGiPlayer', 1.0]], nplayers=N)
-# regular_network(players, z)
-scale_free_network(players, m0=5)
+# players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N)
+regular_network(players, z)
+# scale_free_network(players, m0=5)
 game = PGGiNetwork(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost, nu=nu)
+# game = PGGGame(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost)
 
 if __name__ == "__main__":
     level = logging.INFO
