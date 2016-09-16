@@ -1,2 +1,2 @@
 # EvoSim
-Agent-based Evolutional Game Theory Simulator
+Agent-based Evolutionary Game Theory Simulator
