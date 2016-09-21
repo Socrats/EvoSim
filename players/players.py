@@ -65,6 +65,10 @@ class ParlovPlayer(AbstractPlayer):
 
 
 class PureStrategyPlayer(AbstractPlayer):
+    """
+    action = 0 : Cooperation
+    action = 1 : Defection
+    """
     def __init__(self, pid):
         super().__init__(pid)
         self.action = 0
@@ -104,6 +108,12 @@ class PureStrategyPlayer(AbstractPlayer):
 
 
 class PGGiPlayer(AbstractPlayer):
+    """
+    action = 0 : Cooperation
+    action = 1 : Defection
+    action = 2 : Inspection
+    """
+
     def __init__(self, pid):
         super().__init__(pid)
         self.neighbors = []
@@ -275,6 +285,51 @@ class HumanPlayer(AbstractPlayer):
         self.action = 0 if input('Choose C or D: ') == 'C' else 1
 
         return self.action
+
+
+class BMPlayer(PGGiPlayer):
+    """
+    action = 0 : Cooperation
+    action = 1 : Defection
+    action = 2 : Inspection
+
+    a0 : initial Aspiration level
+    p0 : initial probability of cooperation
+    h : habituation parameter
+    l : learning rate
+    """
+    def __init__(self, pid, a0=0.5, p0=0.5, h=0.2, l=0.5):
+        super().__init__(pid)
+        self.A = a0
+        self.p = p0
+        self.h = h
+        self.l = l
+
+    def selection(self):
+        self.inspected = 0
+        self.prev_action = self.action
+        self.ngame = 0
+
+        # Calculate next action
+        self.action = 0 if (random.rand() <= self.p) else 1
+
+        # Update aspiration
+        self.A = (1 - self.h) * self.A + self.h * self.total_payoff
+        # Calculate stimulus for action at time t
+        # Macy and Flache rule
+        s = (self.total_payoff - self.A)/(self.maxP - self.A)
+        # Update probability of cooperation
+        if self.action == 0: # Cooperate
+            self.p = self.p + (1 - self.p) * self.l * s if s >= 0 else self.p + self.p * self.l * s
+        else:
+            self.p = self.p - self.p * self.l * s if s >= 0 else self.p - (1 - self.p) * self.l * s
+
+
+
+
+
+
+
 
 
 # TODO: add init inspectors randomly

@@ -9,15 +9,15 @@ from network.network import regular_network, scale_free_network
 
 logger = logging.getLogger(__name__)
 
-N = 500
+N = 100
 HUMAN_PLAYER = False
 PMATRIX = np.array([[0.8, 0.0],
                     [1.0, 0.2]])
-GENERATIONS = 100
-THRESHOLD = 100000
+GENERATIONS = 1000
+THRESHOLD = 0
 cost = 1.0
 # r = 3
-r_min = 0.00
+r_min = 1.0
 r_max = 5.25
 r_step = 0.25
 nu = 1.0
@@ -41,9 +41,10 @@ store_data_dir = ""
 # game = PGGiGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
 
 players = generate_players([['PGGiPlayer', 1.0]], nplayers=N)
+# players = generate_players([['BMPlayer', 0.3], ['PGGiPlayer', 0.7]], nplayers=N)
 # players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N)
-regular_network(players, z)
-# scale_free_network(players, m0=5)
+# regular_network(players, z)
+scale_free_network(players, m0=2)
 game = PGGiNetwork(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost, nu=nu)
 # game = PGGGame(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost)
 
