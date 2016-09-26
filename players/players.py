@@ -1,5 +1,5 @@
 import importlib
-from numpy import random
+from numpy import random, tanh
 
 
 class AbstractPlayer:
@@ -298,12 +298,14 @@ class BMPlayer(PGGiPlayer):
     h : habituation parameter
     l : learning rate
     """
-    def __init__(self, pid, a0=0.5, p0=0.5, h=0.2, l=0.5):
+    def __init__(self, pid, a0=0.5, p0=0.5, h=0.0, l=0.5, beta=0.2, e=0.05):
         super().__init__(pid)
         self.A = a0
         self.p = p0
         self.h = h
         self.l = l
+        self.beta = beta
+        self.e = e
 
     def selection(self):
         self.inspected = 0
@@ -312,24 +314,26 @@ class BMPlayer(PGGiPlayer):
 
         # Calculate next action
         self.action = 0 if (random.rand() <= self.p) else 1
+        # Misimplementation probability
+        if random.rand() <= self.e:
+            self.action = (self.action + 1) % 2
 
         # Update aspiration
         self.A = (1 - self.h) * self.A + self.h * self.total_payoff
         # Calculate stimulus for action at time t
         # Macy and Flache rule
-        s = (self.total_payoff - self.A)/(self.maxP - self.A)
+        s = self.masuda_stimulus()
         # Update probability of cooperation
         if self.action == 0: # Cooperate
             self.p = self.p + (1 - self.p) * self.l * s if s >= 0 else self.p + self.p * self.l * s
         else:
             self.p = self.p - self.p * self.l * s if s >= 0 else self.p - (1 - self.p) * self.l * s
 
+    def mf_stimulus(self):
+        return (self.total_payoff - self.A)/(self.maxP - self.A)
 
-
-
-
-
-
+    def masuda_stimulus(self):
+        return tanh(self.beta*(self.total_payoff - self.A))
 
 
 # TODO: add init inspectors randomly
