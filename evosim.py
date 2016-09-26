@@ -5,11 +5,14 @@ from time import time
 
 from players.players import generate_players
 from games.games import NIPDGame, PGGGame, PGGiGame, PGGiNetwork
-from network.network import regular_network, scale_free_network
+from network.network import regular_network, scale_free_network, calculate_avg_connectivity, barabasi_albert_graph
 
 logger = logging.getLogger(__name__)
 
-N = 100
+level = logging.INFO
+logging.basicConfig(level=level)
+
+N = 1000
 HUMAN_PLAYER = False
 PMATRIX = np.array([[0.8, 0.0],
                     [1.0, 0.2]])
@@ -18,13 +21,13 @@ THRESHOLD = 0
 cost = 1.0
 # r = 3
 r_min = 1.0
-r_max = 5.25
+r_max = 4.0
 r_step = 0.25
 nu = 1.0
 runs = 1
 realizations = 1
-ncoop = 0.5
-ninsp = 0.0
+ncoop = 0.4
+ninsp = 0.2
 z = 4
 show_micro_simulations = True
 store_plots = False
@@ -40,18 +43,17 @@ store_data_dir = ""
 # players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N, ncoop=ncoop, ninsp=ninsp)
 # game = PGGiGame(players, threshold=THRESHOLD, generations=GENERATIONS, r=r, cost=cost, nu=nu)
 
-players = generate_players([['PGGiPlayer', 1.0]], nplayers=N)
-# players = generate_players([['BMPlayer', 0.3], ['PGGiPlayer', 0.7]], nplayers=N)
+# players = generate_players([['PGGiPlayer', 1.0]], nplayers=N)
+players = generate_players([['BMPlayer', 1.0], ['PGGiPlayer', 0.0]], nplayers=N)
 # players = generate_players([['PureStrategyPlayer', 1.0]], nplayers=N)
 # regular_network(players, z)
-scale_free_network(players, m0=2)
+# scale_free_network(players, m0=2)
+barabasi_albert_graph(players, z=4, seed=5)
+logger.info("Average connectivity = %f and z = %f", calculate_avg_connectivity(players), z)
 game = PGGiNetwork(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost, nu=nu)
 # game = PGGGame(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost)
 
 if __name__ == "__main__":
-    level = logging.INFO
-    logging.basicConfig(level=level)
-
     x = np.arange(THRESHOLD, THRESHOLD + GENERATIONS)
     r_params = np.arange(r_min, r_max, r_step)
     coop_avg_run = np.empty([1, runs])

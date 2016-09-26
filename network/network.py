@@ -1,4 +1,7 @@
 from numpy import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractNetwork:
@@ -53,13 +56,23 @@ def regular_network(population, avg_connectivity=4):
 
 
 def scale_free_network(population, m=4, m0=2, undirected=False):
+    """
+    Generate Barrabasi-Albert scale-free network
+
+    :param population: list of players in the population
+    :param m:
+    :param m0: initial number of nodes
+    :param undirected:
+    :return:
+    """
+    logger.info("Building scale-free network...")
     population_size = len(population)
     total_degree = 0
 
     # Create initial nodes
-    for i in range(0, m0 - 1):
+    for i in range(0, m0):
         player = population[i]
-        for j in range(i+1, i + m0):
+        for j in range(i+1, m0):
             new_neighbor = population[j]
             # Add the neighbor
             set_as_neighbor(player, new_neighbor)
@@ -95,6 +108,82 @@ def scale_free_network(population, m=4, m0=2, undirected=False):
             # Update Network Degree
             total_degree += 2
 
+    logger.info("Finished building network.")
+
+
+def barabasi_albert_graph(population, m=2, z=None, seed=None):
+    """Return random graph using Barabási-Albert preferential attachment model.
+
+    A graph of n nodes is grown by attaching new nodes each with m
+    edges that are preferentially attached to existing nodes with high
+    degree.
+
+    Parameters
+    ----------
+    population: dict
+                dictionary of player objects
+    m : int
+        Number of edges to attach from a new node to existing nodes
+    z : average connectivity
+    seed : int, optional
+        Seed for random number generator (default=None).
+
+    Returns
+    -------
+    G : Graph
+
+    Notes
+    -----
+    The initialization is a graph with with m nodes and no edges.
+
+    References
+    ----------
+    .. [1] A. L. Barabási and R. Albert "Emergence of scaling in
+       random networks", Science 286, pp 509-512, 1999.
+    """
+
+    n = len(population)
+
+    if z is not None:
+        m = z//2
+
+    if m < 1 or m >= n:
+        raise ("Barabási-Albert network must have m>=1 and m<n, m=%d,n=%d" % (m, n))
+    if seed is not None:
+        random.seed(seed)
+
+    # Target nodes for new edges
+    targets = list(range(m))
+    # List of existing nodes, with nodes repeated once for each adjacent edge
+    repeated_nodes = []
+    # Start adding the other n-m nodes. The first node is m.
+    source = m
+    while source < n:
+        # Add edges to m nodes from the source.
+        for i in targets:
+            set_as_neighbor(population[i], population[source])
+        # Add one node to the list for each new edge just created.
+        repeated_nodes.extend(targets)
+        # And the new node "source" has m edges to add to the list.
+        repeated_nodes.extend([source]*m)
+        # Now choose m unique nodes from the existing nodes
+        # Pick uniformly from repeated_nodes (preferential attachement)
+        targets = _random_subset(repeated_nodes, m)
+        source += 1
+
+
+def _random_subset(seq, m):
+    """ Return m unique elements from seq.
+
+    This differs from random.sample which can return repeated
+    elements if seq holds repeated elements.
+    """
+    targets = set()
+    while len(targets) < m:
+        x = random.choice(seq)
+        targets.add(x)
+    return targets
+
 
 def no_neighbor(neighbor, player):
     no = True
@@ -108,3 +197,12 @@ def no_neighbor(neighbor, player):
 def set_as_neighbor(player, new_neighbor):
     player.neighbors.append(new_neighbor)
     new_neighbor.neighbors.append(player)
+
+
+def calculate_avg_connectivity(population):
+    avg_connectivity = 0
+
+    for index in range(len(population)):
+        avg_connectivity = (avg_connectivity*index + len(population[index].neighbors)) / (index + 1)
+
+    return avg_connectivity
