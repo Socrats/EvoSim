@@ -4,6 +4,7 @@ import logging
 from players.players import generate_players
 from games.games import NIPDGame, PGGGame, PGGiGame, PGGiNetwork
 from network.network import regular_network, scale_free_network
+from simulation.simulation import Simulation
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,19 @@ scale_free_network(players, m0=2)
 game = PGGiNetwork(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost, nu=nu)
 # game = PGGGame(players, threshold=THRESHOLD, generations=GENERATIONS, cost=cost)
 
-# Define a simulation object
+dictionary = {'N': N, 'HUMAN_PLAYER': HUMAN_PLAYER, 'PMATRIX': PMATRIX, 'GENERATIONS': GENERATIONS,
+              'THRESHOLD': THRESHOLD,
+              'cost': cost, 'r_min': r_min, 'r_max': r_max, 'r_step': r_step, 'nu': nu, 'runs': runs,
+              'realizations': realizations,
+              'ncoop': ncoop, 'ninsp': ninsp, 'z': z, 'show_micro_simulations': show_micro_simulations,
+              'store_plots': store_plots,
+              'store_plots_dir': store_plots_dir, 'store_data': store_data, 'store_data_dir': store_data_dir,
+              'players': players, 'game': game}
 
-# simulation.run()
+#  Define a simulation object
+logger.info('Creating simulation')
+sim1 = Simulation('Sim1', 'local', **dictionary)
+logger.info(sim1)
+logger.info('Starting simulation')
+
+sim1.run()
