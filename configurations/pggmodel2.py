@@ -1,3 +1,22 @@
+################
+# evoSim
+# Copyright © 2016 Elias F. Domingos
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#################
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -24,7 +43,7 @@ alpha = 0.5
 gamma = 1.0
 delta = 0.0
 mutation = 0.0
-z = N-1
+z = N - 1
 show_micro_simulations = True
 store_plots = False
 store_plots_dir = ""
@@ -93,8 +112,8 @@ if __name__ == "__main__":
                     plt.show()
                     plt.pause(0.0001)
 
-                # Init population
-                # game.init_population(ncoop=ncoop, ninsp=ninsp)
+                    # Init population
+                    # game.init_population(ncoop=ncoop, ninsp=ninsp)
 
             # Update the Avg.
             coop_avg_real[0][s] = np.mean(coop_avg_run)
@@ -110,11 +129,11 @@ if __name__ == "__main__":
         plt.ioff()
     # Save and Plot results
     plt.figure(2)
-    x_r = [r_param/(z+1) for r_param in r_params]
+    x_r = [r_param / (z + 1) for r_param in r_params]
     plt.plot(x_r, coop_avg, label='Fraction of cooperators', color='g')
     if game.__class__.__name__ == 'PGGiGame' or 'PGGiNetwork':
         plt.plot(x_r, insp_avg, label='Fraction of inspectors', color='b')
-    plt.xlim(r_min/(z+1), r_max/(z+1))
+    plt.xlim(r_min / (z + 1), r_max / (z + 1))
     plt.ylim(-0.1, 1.2)
     plt.xlabel(r'$\eta = \frac{r}{z+1}$')
     plt.ylabel("Fraction of players")
