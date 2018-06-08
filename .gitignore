@@ -6,3 +6,9 @@ node_modules
 *.pyc
 __pycache__
 *.swp
+*.npy
+*.log
+*.pdf
+*.jpg
+*.png
+*/results

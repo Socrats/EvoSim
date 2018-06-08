@@ -16,7 +16,6 @@
 # ==============================================================================
 
 
-
 import logging
 
 import numpy as np
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 level = logging.INFO
 logging.basicConfig(level=level)
 
-N = 100
+N = 1000
 HUMAN_PLAYER = False
 PMATRIX = np.array([[0.8, 0.0],
                     [1.0, 0.2]])
@@ -48,7 +47,7 @@ realizations = 1
 ncoop = 0.5
 ninsp = 0.0
 z = 4
-show_micro_simulations = True
+show_micro_simulations = Fa
 store_plots = False
 store_plots_dir = ""
 store_data = False

@@ -214,7 +214,7 @@ class PGGiPlayer(AbstractPlayer):
         player = self.neighbors[random.randint(0, len(self.neighbors))]
 
         if self.total_payoff < player.total_payoff:
-            prob = (player.total_payoff - self.total_payoff) / (player.maxP - self.minP)
+            prob = (player.total_payoff - self.total_payoff) / abs(player.maxP - self.minP)
             if random.uniform(0, 1) < prob:
                 self.action = player.prev_action
 
@@ -361,7 +361,7 @@ def players_factory(args):
         count = 0
         for name in args:
             for i in range(int(args[name])):
-                player = getattr(importlib.import_module("players.players"), name)(count)
+                player = getattr(importlib.import_module("evosim.players.players"), name)(count)
                 players[count] = player
                 count += 1
         return players

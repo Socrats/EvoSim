@@ -21,8 +21,8 @@ from time import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from games.games import PGGSocialControl
-from players.players import generate_players
+from evosim.games.games import PGGSocialControl
+from evosim.players.players import generate_players
 
 from evosim.network.network import regular_network
 

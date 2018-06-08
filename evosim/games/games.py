@@ -212,10 +212,11 @@ class PGGiNetwork(PGGGame):
         return ((nc*self.r*self.c)/(k + 1 - ni)) - (1-action)*self.c
 
     def local_max_p(self, k):
-        return (self.r*self.c*k)/(k+1)
+        return (self.r*self.c*k)/(k + 1)
 
     def local_min_p(self, k):
-        return ((self.r/(k+1)) - 1)*self.c
+        # return ((self.r/(k+1)) - 1)*self.c
+        return (self.r - 1) * self.c
 
     def init_game(self):
         self.nc = 1
